@@ -20,7 +20,7 @@
 #include "ButtonMatrix.h"
 #include "GcodeStreaming.h"
 #include "ILI9488_t3.h"
-#include "USBHost_t36.h"
+#include <USBHost_t36.h>
 #include "Version.h"
 
 #ifdef USE_GDB
@@ -48,14 +48,14 @@ volatile uintCharStruct selector1Pos[12] =
 {
    { SYSTEM, "SYSTEM" }, { AXIS_X, "X AXIS" }, { AXIS_Y, "Y AXIS" }, { AXIS_Z, "Z AXIS" },
    { SPINDLE, "SPINDLE" }, { FEEDRATE, "FEEDRATE" }, { LCDBRT, "LCD BRT" }, { FILES, "FILES" },
-   {SEL_NONE, "\0" }, { SEL_NONE, "\0" }, { SEL_NONE, "\0" }, { SEL_NONE, "\0" }
+   {AXIS_XY, "XY AXIS" }, { SEL_NONE, "\0" }, { SEL_NONE, "\0" }, { SEL_NONE, "\0" }
 };
 
 volatile uintCharStruct selector2Pos[12] =
 {
-   { JOG, "JOG" }, { XP1, "0.1X" }, { X1, "1X" }, { X10, "10X" },
-   { X100, "100X" }, { F1, "F1" }, { F2, "F2" }, { DEBUG, "DEBUG" },
-   { SEL_NONE, "\0" }, {SEL_NONE, "\0" }, { SEL_NONE, "\0" }, { SEL_NONE, "\0" }
+   { JOG, "JOG" }, { XP01, "0.01X" },{ XP1, "0.1X" }, { X1, "1X" }, 
+   { X10, "10X" }, { X100, "100X" }, { F1, "F1" }, { F2, "F2" }, 
+   { DEBUG, "DEBUG" }, {SEL_NONE, "\0" }, { SEL_NONE, "\0" }, { SEL_NONE, "\0" }
 };
 volatile uintCharStruct emptySel;// = { SEL_NONE, "NONE" };
 volatile SelectorT Sel1Pos(&emptySel);
@@ -75,49 +75,63 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
 // Map matrix inputs to Grbl signals or commands
 
 // Permanently assigned.
-#define BTN_FEEDHOLD              ButtonMatrix::eR4C1
+#define BTN_ESTOP                 ButtonMatrix::eR4C1
 #define BTN_CYCLE_START_RESUME    ButtonMatrix::eR4C2
-#define BTN_SHIFT                 ButtonMatrix::eR4C3
+#define BTN_FEEDHOLD              ButtonMatrix::eR4C3
+#define BTN_SHIFT                 ButtonMatrix::eR4C4
 
 // Default mode
-#define BTN_SetZ0     ButtonMatrix::eR1C1
-#define BTN_GotoZ0    ButtonMatrix::eR1C2
-#define BTN_LaserMode ButtonMatrix::eR1C3
+#define BTN_UNLOCK                  ButtonMatrix::eR1C1
+#define BTN_RUN_TOOL_CHANGE_MACRO   ButtonMatrix::eR2C1
+#define BTN_CLEANUP                 ButtonMatrix::eR3C1
 
-#define BTN_SetY0   ButtonMatrix::eR2C1
-#define BTN_GotoY0    ButtonMatrix::eR2C2
-#define BTN_GotoX0Y0 ButtonMatrix::eR2C3
+#define BTN_SOFTRESET               ButtonMatrix::eR1C2
+#define BTN_EMPTY1                  ButtonMatrix::eR2C2
+#define BTN_SLEEP                   ButtonMatrix::eR3C2
 
-#define BTN_SetX0    ButtonMatrix::eR3C1
-#define BTN_GotoX0    ButtonMatrix::eR3C2
-#define BTN_M3M5    ButtonMatrix::eR3C3
+#define BTN_M3M5                    ButtonMatrix::eR1C3
+#define BTN_M7                      ButtonMatrix::eR2C3
+#define BTN_M8                      ButtonMatrix::eR3C3
+
+#define BTN_HOME                    ButtonMatrix::eR1C4
+#define BTN_EMPTY2                  ButtonMatrix::eR2C4
+#define BTN_GOTOHALF                ButtonMatrix::eR3C4
 
 bool btnShiftPressed = false;
+
 // F1 mode
-#define BTN_ProbeZ     ButtonMatrix::eR1C1
-#define BTN_G56     ButtonMatrix::eR1C2
-#define BTN_G59 ButtonMatrix::eR1C3
+#define BTN_SetX0Y0                 ButtonMatrix::eR1C1
+#define BTN_ProbeXY                 ButtonMatrix::eR2C1
+#define BTN_GotoX0Y0                ButtonMatrix::eR3C1
 
-#define BTN_ProbeY   ButtonMatrix::eR2C1
-#define BTN_G55    ButtonMatrix::eR2C2
-#define BTN_G58 ButtonMatrix::eR2C3
+#define BTN_SetX0                   ButtonMatrix::eR1C2
+#define BTN_ProbeX                  ButtonMatrix::eR2C2
+#define BTN_GotoX0                  ButtonMatrix::eR3C2
 
-#define BTN_ProbeX    ButtonMatrix::eR3C1
-#define BTN_G54    ButtonMatrix::eR3C2
-#define BTN_G57    ButtonMatrix::eR3C3
+#define BTN_SetY0                   ButtonMatrix::eR1C3
+#define BTN_ProbeY                  ButtonMatrix::eR2C3
+#define BTN_GotoY0                  ButtonMatrix::eR3C3
 
-// System Mode
-#define BTN_HOME     ButtonMatrix::eR1C1
-#define BTN_RUN_TOOL_CHANGE_MACRO  ButtonMatrix::eR1C2
-#define BTN_TOGGLE_LASER_TEST_MODE ButtonMatrix::eR1C3
+#define BTN_SetZ0                   ButtonMatrix::eR1C4
+#define BTN_ProbeZ                  ButtonMatrix::eR2C4
+#define BTN_GotoZ0                  ButtonMatrix::eR3C4
 
-//#define BTN_NA   ButtonMatrix::eR2C1
-//#define BTN_NA    ButtonMatrix::eR2C2
-#define BTN_FORCE_RESYNC ButtonMatrix::eR2C3
+// F2 mode
+#define BTN_FORCE_RESYNC            ButtonMatrix::eR1C1
+#define BTN_GCODE_CHK               ButtonMatrix::eR2C1
+#define BTN_TOGGLE_LASER_TEST_MODE  ButtonMatrix::eR3C1
 
-#define BTN_SOFTRESET    ButtonMatrix::eR3C1
-#define BTN_UNLOCK    ButtonMatrix::eR3C2
-#define BTN_SLEEP    ButtonMatrix::eR3C3
+#define BTN_G54                     ButtonMatrix::eR1C2
+#define BTN_G57                     ButtonMatrix::eR2C2
+#define BTN_LaserMode               ButtonMatrix::eR3C2
+
+#define BTN_G55                     ButtonMatrix::eR1C3
+#define BTN_G58                     ButtonMatrix::eR2C3
+#define BTN_G28                     ButtonMatrix::eR3C3
+
+#define BTN_G56                     ButtonMatrix::eR1C4
+#define BTN_G59                     ButtonMatrix::eR2C4
+#define BTN_G28_1                   ButtonMatrix::eR3C4
 
 //////////////////////////////////////////////////////////////
 
@@ -127,10 +141,10 @@ bool btnShiftPressed = false;
 #define ENC_SW 17
 void EncoderInterrupt();
 uint16_t JOG_MIN_SPEED = 1000; // mm/min (Don't make it too slow).
-uint16_t JOG_MAX_SPEED = 8000; // mm/min (Needs to be set from the GRBL eeprom settings $110-$112
+uint16_t JOG_MAX_SPEED = 4000; // mm/min (Needs to be set from the GRBL eeprom settings $110-$112
 time_t _commandIntervalDelay = 100; // mSecs
 float _resolution = 10; // Inverse of distance travelled per pulse, for ex, 10 = 1 / 0.1mm/pulse 
-uint16_t AXES_ACCEL [3] = { 500, 500, 50 }; // mm/s/s <-- Need to fill these from the GRBL eeprom values $120-$122
+uint16_t AXES_ACCEL [3] = { 100, 100, 100 }; // mm/s/s <-- Need to fill these from the GRBL eeprom values $120-$122
 
 // Display
 #define TFT_PWR 6
@@ -424,8 +438,10 @@ void setup()
    pinMode(FEEDRATE, INPUT_PULLUP);
    pinMode(LCDBRT, INPUT_PULLUP);
    pinMode(FILES, INPUT_PULLUP);
+   pinMode(AXIS_XY, INPUT_PULLUP);
 
    pinMode(JOG, INPUT_PULLUP);
+   pinMode(XP01, INPUT_PULLUP);
    pinMode(XP1, INPUT_PULLUP);
    pinMode(X1, INPUT_PULLUP);
    pinMode(X10, INPUT_PULLUP);
@@ -442,8 +458,10 @@ void setup()
    attachInterrupt(digitalPinToInterrupt(FEEDRATE), TestSelector1, CHANGE);
    attachInterrupt(digitalPinToInterrupt(LCDBRT), TestSelector1, CHANGE);
    attachInterrupt(digitalPinToInterrupt(FILES), TestSelector1, CHANGE);
+   attachInterrupt(digitalPinToInterrupt(AXIS_XY), TestSelector1, CHANGE);
 
    attachInterrupt(digitalPinToInterrupt(JOG), TestSelector2, CHANGE);
+   attachInterrupt(digitalPinToInterrupt(XP01), TestSelector2, CHANGE);
    attachInterrupt(digitalPinToInterrupt(XP1), TestSelector2, CHANGE);
    attachInterrupt(digitalPinToInterrupt(X1), TestSelector2, CHANGE);
    attachInterrupt(digitalPinToInterrupt(X10), TestSelector2, CHANGE);
@@ -485,6 +503,9 @@ void setup()
 
 void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::ButtonStateType state)
 {
+
+   //Serial.print("Button!: ");Serial.print(button);Serial.print(", ");Serial.println(state);
+
    if(grblState.state == eRun)
    {
       // If Grbl is running, only respond to the
@@ -493,11 +514,15 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
       {
          switch(button)
          {
+            case(BTN_ESTOP):
+               Serial.println("eRun - BTN_ESTOP");
+               break;
             case(BTN_FEEDHOLD):
+               Serial.println("eRun - GRBL_FEEDHOLD");
                SendToGrbl(GRBL_FEEDHOLD);
                break;
-
             case(BTN_CYCLE_START_RESUME):
+               Serial.println("eRun - GRBL_CYCLESTARTRESUME");
                SendToGrbl(GRBL_CYCLESTARTRESUME);
                break;
             default:
@@ -509,17 +534,20 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
    {
       if(state == ButtonMatrix::ePressed)
       {
-         //Serial.print(", P: ");Serial.print(button);Serial.print(", ");Serial.println(state);
          switch(button)
          {
-            case(BTN_SHIFT):
-               btnShiftPressed = true;
+            case(BTN_ESTOP):
+               Serial.println("ePressed - BTN_ESTOP");
                break;
-
             case(BTN_FEEDHOLD):
+               Serial.println("ePressed - GRBL_FEEDHOLD");
                break;
-
             case(BTN_CYCLE_START_RESUME):
+               Serial.println("ePressed - GRBL_CYCLESTARTRESUME");
+               break;
+            case(BTN_SHIFT):
+               Serial.println("ePressed - BTN_SHIFT");
+               btnShiftPressed = true;
                break;
 
             default:
@@ -529,6 +557,7 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
                   switch(button)
                   {
                      default:
+                        Serial.println("ePressed - SYSTEM - Anybtn");
                         break;
                   }
                }
@@ -540,6 +569,7 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
                      switch(button)
                      {
                         default:
+                           Serial.println("ePressed - F1 - Anybtn");
                            break;
                      }
                   }
@@ -549,6 +579,7 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
                      switch(button)
                      {
                         default:
+                           Serial.println("ePressed - F2 - Anybtn");
                            break;
                      }
                   }
@@ -558,6 +589,7 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
                      switch(button)
                      {
                         default:
+                           Serial.println("ePressed - Default - Anybtn");
                            break;
                      }
                   }
@@ -570,58 +602,25 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
       {
          switch(button)
          {
-            case(BTN_SHIFT):
-               btnShiftPressed = false;
+            case(BTN_ESTOP):
+               Serial.println("eReleased - BTN_ESTOP");
                break;
-
             case(BTN_FEEDHOLD):
+               Serial.println("eReleased - GRBL_FEEDHOLD");
                SendToGrbl(GRBL_FEEDHOLD);
                break;
-
             case(BTN_CYCLE_START_RESUME):
+               Serial.println("eReleased - GRBL_CYCLESTARTRESUME");
                SendToGrbl(GRBL_CYCLESTARTRESUME);
                break;
-
+            case(BTN_SHIFT):
+               Serial.println("eReleased - BTN_SHIFT");
+               btnShiftPressed = false;
+               break;
             default:
                if(Sel1Pos.k() == SYSTEM)
                {
-                  // System mode
-                  switch(button)
-                  {
-                     case(BTN_HOME):
-                        SendToGrbl(GRBL_HOMING);
-                        break;
-                     case(BTN_UNLOCK):
-                        if(grblState.state == eIdle || grblState.state == eAlarm)
-                        {
-                           SendToGrbl(GRBL_UNLOCK);
-                        }
-                        break;
-                     case(BTN_SOFTRESET):
-                        SendToGrbl(GRBL_SOFTRESET);
-                        break;
-                     case(BTN_SLEEP):
-                        SendToGrbl(GRBL_SLEEP);
-                        break;
-                     case(BTN_FORCE_RESYNC):
-                        RequestGrblStateUpdate(ALLREQ);
-                        break;
-                     case(BTN_TOGGLE_LASER_TEST_MODE):
-                        if(grblState.laserMode == true)
-                        {
-                           if(grblState.spindleState == esM5)
-                           {
-                              SendToGrbl(GRBL_LASER_TESTMODE_ON);
-                           }
-                           else
-                           {
-                              SendToGrbl(GRBL_LASER_TESTMODE_OFF);
-                           }
-                        }
-                        break;
-                     default:
-                        break;
-                  }
+
                }
                else
                {
@@ -630,93 +629,96 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
                      // F1 Mode
                      switch(button)
                      {
-                        case(BTN_ProbeX):
                         // For the probe commands, it would be nice to let
                         // the user pick the direction of travel before probing,
                         // the distance to probe and the offset to set the
                         // position to.
+                        case(BTN_SetX0Y0):
+                           Serial.println("eReleased - F1 - BTN_SetX0Y0");
+                           break;
+                        case(BTN_GotoX0Y0):
+                           Serial.println("eReleased - F1 - BTN_GotoX0Y0");
+                           SendToGrbl(GRBL_JOG_TO_X0Y0);
+                           break;
+
+                        case(BTN_SetX0):
+                           Serial.println("eReleased - F1 - BTN_SetX0");
+                           SendToGrbl(GRBL_SET_X_ZERO);
+                           break;
+                        case(BTN_ProbeX):
+                           Serial.println("eReleased - F1 - BTN_ProbeX");
                            controllerState = CONTROLLER_PROBEX;
                            SendToGrbl(GRBL_PROBE_X);
                            SendToGrbl(GRBL_SET_X_ZERO);
                            break;
+                        case(BTN_GotoX0):
+                           Serial.println("eReleased - F1 - BTN_GotoX0");
+                           SendToGrbl(GRBL_JOG_TO_X0);
+                           break;
+
+                        case(BTN_SetY0):
+                           Serial.println("eReleased - F1 - BTN_SetY0");
+                           SendToGrbl(GRBL_SET_Y_ZERO);
+                           break;
                         case(BTN_ProbeY):
+                           Serial.println("eReleased - F1 - BTN_ProbeY");
                            controllerState = CONTROLLER_PROBEY;
                            SendToGrbl(GRBL_PROBE_Y);
                            SendToGrbl(GRBL_SET_Y_ZERO);
                            break;
+                        case(BTN_GotoY0):
+                           Serial.println("eReleased - F1 - BTN_GotoY0");
+                           SendToGrbl(GRBL_JOG_TO_Y0);
+                           break;
+
+                        case(BTN_SetZ0):
+                           Serial.println("eReleased - F1 - BTN_SetZ0");
+                           SendToGrbl(GRBL_SET_Z_ZERO);
+                           break;
                         case(BTN_ProbeZ):
+                           Serial.println("eReleased - F1 - BTN_ProbeZ");
                            controllerState = CONTROLLER_PROBEZ;
                            SendToGrbl(GRBL_PROBE_Z);
                            SendToGrbl(GRBL_SET_Z_ZERO);
                            break;
-
-                        case(BTN_G54):
-                           SendToGrbl("G54");
-                           break;
-                        case(BTN_G55):
-                           SendToGrbl("G55");
-                           break;
-                        case(BTN_G56):
-                           SendToGrbl("G56");
-                           break;
-                        case(BTN_G57):
-                           SendToGrbl("G57");
-                           break;
-                        case(BTN_G58):
-                           SendToGrbl("G58");
-                           break;
-                        case(BTN_G59):
-                           SendToGrbl("G59");
+                        case(BTN_GotoZ0):
+                           Serial.println("eReleased - F1 - BTN_GotoZ0");
+                           SendToGrbl(GRBL_JOG_TO_Z0);
                            break;
 
                         default:
+                           Serial.println("eReleased - F1 - anybtn");
                            break;
                      }
                   }
                   else if(Sel2Pos.k() == F2)
                   {
                      // F2 Mode
-                  }
-                  else
-                  {
-                     // Default Mode
                      switch(button)
-                     {            
-                        case(BTN_SetX0):
-                           SendToGrbl(GRBL_SET_X_ZERO);
+                     {
+                        case(BTN_FORCE_RESYNC):
+                           Serial.println("eReleased - F2 - BTN_FORCE_RESYNC");
+                           RequestGrblStateUpdate(ALLREQ);
                            break;
-                        case(BTN_SetY0):
-                           SendToGrbl(GRBL_SET_Y_ZERO);
+                        case(BTN_GCODE_CHK):
+                           Serial.println("eReleased - F2 - BTN_GCODE_CHK");
                            break;
-                        case(BTN_SetZ0):
-                           SendToGrbl(GRBL_SET_Z_ZERO);
-                           break;
-
-                        case(BTN_GotoX0):
-                           SendToGrbl(GRBL_JOG_TO_X0);
-                           break;
-                        case(BTN_GotoY0):
-                           SendToGrbl(GRBL_JOG_TO_Y0);
-                           break;
-                        case(BTN_GotoZ0):
-                           SendToGrbl(GRBL_JOG_TO_Z0);
-                           break;
-                        case(BTN_GotoX0Y0):
-                           SendToGrbl(GRBL_JOG_TO_X0Y0);
-                           break;
-
-                        case(BTN_M3M5):
-                           if(grblState.spindleState == esM5)
+                        case(BTN_TOGGLE_LASER_TEST_MODE):
+                           Serial.println("eReleased - F2 - BTN_TOGGLE_LASER_TEST_MODE");
+                           if(grblState.laserMode == true)
                            {
-                              SendToGrbl("M3");
-                           }
-                           else
-                           {
-                              SendToGrbl("M5");
+                              if(grblState.spindleState == esM5)
+                              {
+                                 SendToGrbl(GRBL_LASER_TESTMODE_ON);
+                              }
+                              else
+                              {
+                                 SendToGrbl(GRBL_LASER_TESTMODE_OFF);
+                              }
                            }
                            break;
-
                         case(BTN_LaserMode):
+                           Serial.println("eReleased - F2 - BTN_LaserMode");
                            // Toggle laser mode
                            SendToGrbl("G4P0");
                            if(grblState.laserMode == false)
@@ -730,7 +732,102 @@ void HandleButtonChange(ButtonMatrix::ButtonMasksType button, ButtonMatrix::Butt
 
                            RequestGrblStateUpdate(EEREQ);
                            break;
+                        case(BTN_G54):
+                           Serial.println("eReleased - F2 - G54");
+                           SendToGrbl("G54");
+                           break;
+                        case(BTN_G55):
+                           Serial.println("eReleased - F2 - G55");
+                           SendToGrbl("G55");
+                           break;
+                        case(BTN_G56):
+                           Serial.println("eReleased - F2 - G56");
+                           SendToGrbl("G56");
+                           break;
+                        case(BTN_G57):
+                           Serial.println("eReleased - F2 - G57");
+                           SendToGrbl("G57");
+                           break;
+                        case(BTN_G58):
+                           Serial.println("eReleased - F2 - G58");
+                           SendToGrbl("G58");
+                           break;
+                        case(BTN_G59):
+                           Serial.println("eReleased - F2 - G59");
+                           SendToGrbl("G59");
+                           break;
+                        case(BTN_G28):
+                           Serial.println("eReleased - F2 - BTN_G28");
+                           break;
+                        case(BTN_G28_1):
+                           Serial.println("eReleased - F2 - BTN_G28_1");
+                           break;
                         default:
+                           Serial.println("eReleased - F2 - anybtn");
+                           break;
+                     }
+                  }
+                  else
+                  {
+                     // Default Mode
+                     switch(button)
+                     {            
+                        case(BTN_UNLOCK):
+                           Serial.println("eReleased - Default - BTN_UNLOCK");
+                           if(grblState.state == eIdle || grblState.state == eAlarm)
+                           {
+                              SendToGrbl(GRBL_UNLOCK);
+                           }
+                           break;
+                        case(BTN_RUN_TOOL_CHANGE_MACRO):
+                           Serial.println("eReleased - Default - BTN_RUN_TOOL_CHANGE_MACRO");
+                           break;
+                        case(BTN_CLEANUP):
+                           Serial.println("eReleased - Default - BTN_CLEANUP");
+                           SendToGrbl(GRBL_HOMING);
+                           break;
+                        case(BTN_SOFTRESET):
+                           Serial.println("eReleased - Default - BTN_SOFTRESET");
+                           SendToGrbl(GRBL_SOFTRESET);
+                           break;
+                        case(BTN_EMPTY1):
+                           Serial.println("eReleased - Default - BTN_EMPTY1");
+                           break;
+                        case(BTN_EMPTY2):
+                           Serial.println("eReleased - Default - BTN_EMPTY2");
+                           break;                           
+                        case(BTN_SLEEP):
+                           Serial.println("eReleased - Default - BTN_SLEEP");
+                           SendToGrbl(GRBL_SLEEP);
+                           break;
+                        case(BTN_M3M5):
+                           Serial.println("eReleased - Default - BTN_M3M5");
+                           if(grblState.spindleState == esM5)
+                           {
+                              SendToGrbl("M3");
+                           }
+                           else
+                           {
+                              SendToGrbl("M5");
+                           }
+                           break;
+                        case(BTN_M7):
+                           Serial.println("eReleased - Default - BTN_M7");
+                           SendToGrbl(GRBL_MISTCOOLANT);
+                           break;
+                        case(BTN_M8):
+                           Serial.println("eReleased - Default - BTN_M8");
+                           SendToGrbl(GRBL_FLOODCOOLANT);
+                           break;
+                        case(BTN_HOME):
+                           Serial.println("eReleased - Default - BTN_HOME");
+                           SendToGrbl(GRBL_HOMING);
+                           break;
+                        case(BTN_GOTOHALF):
+                           Serial.println("eReleased - Default - BTN_GOTOHALF");
+                           break;
+                        default:
+                           Serial.println("eReleased - Default - anybtn");
                            break;
                      }
                   }
@@ -865,9 +962,11 @@ void ProcessEncoderRotation(int8_t steps)
             Jog_WheelSpeedVsFeedRate(delta, dir, f, s);
             //Jog_StepsPerRevolution(delta, dir, f, s);
          }
-         
-         sprintf(grblJogCommand, "$J=G91F%.3f%s%.3f", f, XYZ, s);
-         SendToGrbl(grblJogCommand);
+         if(s !=0)
+         {
+            sprintf(grblJogCommand, "$J=G91F%.3f%s%.3f", f, XYZ, s);
+            SendToGrbl(grblJogCommand);
+         }
       }
       else if(Sel2Pos.k() == XP1)
       {
@@ -1714,6 +1813,8 @@ void UpdateStatusDisplay()
          tft.setTextColor(ILI9488_BLACK, ILI9488_WHITE);
       }
       Text(x, y, statusValues[eStatus]);
+//Serial.print("Status: ");
+//Serial.println(statusValues[eStatus]);
 
       char s[32] = { '\0' };
       x = 252;
@@ -2118,6 +2219,16 @@ void loop()
          {
             Sel1Pos.Now(&selector1Pos[Sel1Pos.Position]);
          }
+
+for(uint8_t s = 0; s < 12; ++s)
+{
+   if(selector1Pos[s].k != SEL_NONE && digitalReadFast(selector1Pos[s].k) == LOW)
+   {
+      Sel1Pos.Now(&selector1Pos[s]);
+      Serial.print("sel1 pos:");Serial.println(Sel1Pos.val());
+   }
+}
+
       }
    }
 
@@ -2135,6 +2246,16 @@ void loop()
          {
             Sel2Pos.Now(&selector2Pos[Sel2Pos.Position]);
          }
+
+for(uint8_t s = 0; s < 12; ++s)
+{
+   if(selector2Pos[s].k != SEL_NONE && digitalReadFast(selector2Pos[s].k) == LOW)
+   {
+      Sel2Pos.Now(&selector2Pos[s]);
+      Serial.print("sel2 pos:");Serial.println(Sel2Pos.val());
+   }
+}
+
       }
    }
    // Check button matrix.
@@ -2311,6 +2432,7 @@ void loop()
         }
      }
   }
+ 
   ///////////////////////////////////////////////////////////
 
   // TODO: Reorder this with the input states above...

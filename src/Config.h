@@ -49,23 +49,25 @@ class SelectorT
       bool changeInFrame = false;
 };
 
-#define SYSTEM   31        // SW1.1
-#define AXIS_X 30        // SW1.2
-#define AXIS_Y 29        // SW1.3
-#define AXIS_Z  28       // SW1.4
-#define SPINDLE  27      // SW1.5
-#define FEEDRATE  26     // SW1.6
-#define LCDBRT    25   // SW1.7
-#define FILES     24   // SW1.8
+#define SYSTEM       32       // SW1.1
+#define AXIS_X       31       // SW1.2
+#define AXIS_Y       30       // SW1.3
+#define AXIS_Z       29       // SW1.4
+#define SPINDLE      28       // SW1.5
+#define FEEDRATE     27       // SW1.6
+#define LCDBRT       26       // SW1.7
+#define FILES        25       // SW1.8
+#define AXIS_XY      24       // SW1.9
 
-#define JOG      34      // SW2.1
-#define XP1     35       // SW2.2
-#define X1      36       // SW2.3
-#define X10  37          // SW2.4
-#define X100          38 // SW2.5
-#define F1           39 // SW2.6
-#define F2           40 // SW2.7
-#define DEBUG  41          // SW2.8
+#define JOG          33       // SW2.1
+#define XP01         34       // SW2.2
+#define XP1          35       // SW2.3
+#define X1           36       // SW2.4
+#define X10          37       // SW2.5
+#define X100         38       // SW2.6
+#define F1           39       // SW2.7
+#define F2           40       // SW2.8
+#define DEBUG        41       // SW2.9
 
 // Display
 #define tROWS 33 //40
@@ -126,9 +128,9 @@ typedef struct
    uint8_t spindleOverride = 0;
 
    // EEPROM ($$)
-   float axisMaxRate[3] = { 1000.f, 1000.f, 500.f };
-   float axisMaxAccel[3] = { 50.f, 50.f, 50.f };
-   float axisMaxTravel[3] = { 500.f, 500.f, 100.f };
+   float axisMaxRate[3] = { 4000.f, 4000.f, 1000.f };
+   float axisMaxAccel[3] = { 100.f, 100.f, 100.f };
+   float axisMaxTravel[3] = { 900.f, 1310.f, 200.f };
    bool laserMode = false;
    float maxSpindleSpeed = 0.f;
 

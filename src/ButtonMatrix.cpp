@@ -7,15 +7,19 @@ ButtonMatrix::ButtonMatrix()
    _buttons[eR1C1] = R1C1;
    _buttons[eR1C2] = R1C2;
    _buttons[eR1C3] = R1C3;
+   _buttons[eR1C4] = R1C4;
    _buttons[eR2C1] = R2C1;
    _buttons[eR2C2] = R2C2;
    _buttons[eR2C3] = R2C3;
+   _buttons[eR2C4] = R2C4;
    _buttons[eR3C1] = R3C1;
    _buttons[eR3C2] = R3C2;
    _buttons[eR3C3] = R3C3;
+   _buttons[eR3C4] = R3C4;
    _buttons[eR4C1] = R4C1;
    _buttons[eR4C2] = R4C2;
    _buttons[eR4C3] = R4C3;
+   _buttons[eR4C4] = R4C4;
 }
 
 void ButtonMatrix::begin(uint8_t clk, uint8_t shiftLoad, uint8_t QH, uint8_t nQH, uint8_t clkInh)
@@ -84,11 +88,11 @@ uint8_t ButtonMatrix::Update()
          _change = change;
          _debounce = 0;
          _read = true;
-         //Serial.print("Ch: ");Serial.print(millis());
+         //Serial.print("Ch: ");Serial.println(millis());
       }
-      else if(_read == true && _debounce >= 180)
+      else if(_read == true && _debounce >= 280)
       {
-         //Serial.print(", Ap: ");Serial.print(millis());
+         //Serial.print("Ap: ");Serial.println(millis());
          if(_change != 0)
          {
             for(uint8_t i = 0; i < eBMRange; ++i)

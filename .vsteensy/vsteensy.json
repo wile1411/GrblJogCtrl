@@ -1,5 +1,5 @@
 {
-  "version": "1",
+  "version": "2",
   "target": "vsCode",
   "buildSystem": "makefile",
   "debugSupport": "none",
@@ -11,7 +11,8 @@
       "coreBase": "C:\\Program Files (x86)\\Arduino\\hardware\\teensy\\avr",
       "compilerBase": "C:\\Program Files (x86)\\Arduino\\hardware\\tools\\arm",
       "makefileExtension": null,
-      "copyCore": false,
+      "coreStrategy": "link",
+      "stdLib": "newlib",
       "sharedLibraries": [
         "ILI9488",
         "Adafruit_GFX_Library"
@@ -20,26 +21,6 @@
         "SPI",
         "USBHost_t36"
       ],
-      "board": {
-        "name": "Teensy 4.1",
-        "options": {
-          "USB Type": "Serial",
-          "CPU Speed": "600 MHz",
-          "Optimize": "Faster",
-          "Keyboard Layout": "US English"
-        }
-      }
-    },
-    {
-      "name": "Testdummy",
-      "guid": "ffe328a4-f27d-471e-8e85-df94a6d1ba39",
-      "setupType": "quick",
-      "coreBase": "C:\\Program Files (x86)\\Arduino\\hardware\\teensy\\avr",
-      "compilerBase": "C:\\Program Files (x86)\\Arduino\\hardware\\tools\\arm",
-      "makefileExtension": null,
-      "copyCore": false,
-      "sharedLibraries": [],
-      "projectLibraries": [],
       "board": {
         "name": "Teensy 4.1",
         "options": {
